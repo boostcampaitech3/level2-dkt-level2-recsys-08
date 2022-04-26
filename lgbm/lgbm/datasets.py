@@ -38,6 +38,7 @@ def feature_engineering(df):
 
 def custom_train_test_split(df, ratio=0.7, split=True):
     users = list(zip(df['userID'].value_counts().index, df['userID'].value_counts()))
+    random.seed(42)
     random.shuffle(users)
     
     max_train_data_len = ratio*len(df)
