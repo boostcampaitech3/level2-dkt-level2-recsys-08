@@ -40,7 +40,7 @@ def main():
     FEATS = ['KnowledgeTag', 'user_correct_answer', 'user_total_answer', 
             'user_acc', 'i_mid_sum', 'tag_mean','tag_sum']
 
-    # 원하는 피쳐 취사 선택(inference 파일도 변경해야함)
+    # 원하는 피쳐 취사 선택(Dataset.py 파일도 변경해야함)
     FEATS += [ 
             'u_head_mean',
             'i_mid_mean'                                                                                                  
