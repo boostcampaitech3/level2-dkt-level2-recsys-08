@@ -38,33 +38,16 @@ def main():
     
     # 사용할 Feature 설정
     FEATS = ['KnowledgeTag', 'user_correct_answer', 'user_total_answer', 
-            'user_acc', 'test_mean', 'test_sum', 'tag_mean','tag_sum']
+            'user_acc', 'i_mid_sum', 'tag_mean','tag_sum']
 
     # 원하는 피쳐 취사 선택(inference 파일도 변경해야함)
-    FEATS += [
-            'userID',
-            'assessmentItemID',
-            'testId',
-            'answerCode',
-            'Timestamp',
-            'KnowledgeTag',
-            'user_correct_answer',
-            'user_total_answer',
-            'user_acc',
-            't_elapsed',
-            'i_head',
-            'i_mid',
-            'i_tail',
+    FEATS += [ 
             'u_head_mean',
-            'u_head_count',
+            'i_mid_mean'                                                                                                  
+            't_elapsed',            
             'u_head_elapsed',
-            'i_mid_elapsed',
-            'i_mid_mean',
-            'i_mid_sum',
-            'i_mid_count',
-            'i_mid_tag_count',
-            'tag_mean',
-            'tag_sum']
+            'i_mid_elapsed',           
+            ]
 
 
 
