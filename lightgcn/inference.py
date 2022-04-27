@@ -19,7 +19,7 @@ def main():
     logger.info("Task Started")
 
     logger.info("[1/4] Data Preparing - Start")
-    train_data, test_data, n_node = prepare_dataset(
+    train_data, valid_data, test_data, n_node = prepare_dataset(
         device, CFG.basepath, verbose=CFG.loader_verbose, logger=logger.getChild("data")
     )
     logger.info("[1/4] Data Preparing - Done")
@@ -38,12 +38,17 @@ def main():
     logger.info("[2/4] Model Building - Done")
 
     logger.info("[3/4] Inference - Start")
-    pred = inference(model, test_data, logger=logger.getChild("infer"))
+    pred_vd = inference(model, valid_data, logger=logger.getChild("infer"))
+    pred_ts = inference(model, test_data, logger=logger.getChild("infer"))
     logger.info("[3/4] Inference - Done")
 
     logger.info("[4/4] Result Dump - Start")
-    pred = pred.detach().cpu().numpy()
-    pd.DataFrame({"prediction": pred}).to_csv(
+    pred_vd = pred_vd.detach().cpu().numpy()
+    pd.DataFrame({"prediction": pred_vd}).to_csv(
+        os.path.join(CFG.output_dir, CFG.valid_file), index_label="id"
+    )
+    pred_ts = pred_ts.detach().cpu().numpy()
+    pd.DataFrame({"prediction": pred_ts}).to_csv(
         os.path.join(CFG.output_dir, CFG.pred_file), index_label="id"
     )
     logger.info("[4/4] Result Dump - Done")

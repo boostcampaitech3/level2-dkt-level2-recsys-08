@@ -4,14 +4,15 @@
 class CFG:
     use_cuda_if_available = True
     user_wandb = True
-    wandb_kwargs = dict(project="dkt-gcn")
+    wandb_kwargs = dict(project="boostcamp-dkt")
 
     # data
-    basepath = "/opt/ml/input/data/"
+    basepath = "/opt/ml/input/data/graph_v0/"
     loader_verbose = True
 
     # dump
     output_dir = "./output/"
+    valid_file = 'validation.csv'
     pred_file = "submission.csv"
 
     # build
