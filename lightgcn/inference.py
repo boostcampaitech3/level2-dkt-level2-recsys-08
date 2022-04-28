@@ -38,17 +38,12 @@ def main():
     logger.info("[2/4] Model Building - Done")
 
     logger.info("[3/4] Inference - Start")
-    pred_vd = inference(model, valid_data, logger=logger.getChild("infer"))
-    pred_ts = inference(model, test_data, logger=logger.getChild("infer"))
+    pred = inference(model, test_data, logger=logger.getChild("infer"))
     logger.info("[3/4] Inference - Done")
 
     logger.info("[4/4] Result Dump - Start")
-    pred_vd = pred_vd.detach().cpu().numpy()
-    pd.DataFrame({"prediction": pred_vd}).to_csv(
-        os.path.join(CFG.output_dir, CFG.valid_file), index_label="id"
-    )
-    pred_ts = pred_ts.detach().cpu().numpy()
-    pd.DataFrame({"prediction": pred_ts}).to_csv(
+    pred = pred.detach().cpu().numpy()
+    pd.DataFrame({"prediction": pred}).to_csv(
         os.path.join(CFG.output_dir, CFG.pred_file), index_label="id"
     )
     logger.info("[4/4] Result Dump - Done")
