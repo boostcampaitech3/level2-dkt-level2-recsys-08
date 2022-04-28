@@ -53,7 +53,8 @@ def main():
         use_wandb=CFG.user_wandb,
         weight=CFG.weight_basepath,
         logger=logger.getChild("train"),
-        vd_savedir=os.path.join(CFG.output_dir, CFG.valid_file)
+        vd_savedir=os.path.join(CFG.output_dir, CFG.valid_file),
+        time=CFG.time
     )
     logger.info("[3/3] Model Training - Done")
 
