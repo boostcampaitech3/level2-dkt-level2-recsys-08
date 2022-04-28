@@ -1,8 +1,9 @@
 import os
 
+import pandas as pd
 import numpy as np
 import torch
-from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, recall_score, f1_score
 from torch_geometric.nn.models import LightGCN
 
 
@@ -29,6 +30,7 @@ def train(
     use_wandb=False,
     weight=None,
     logger=None,
+    vd_savedir=None,
 ):
     model.train()
 
@@ -43,9 +45,11 @@ def train(
         edge, label = train_data["edge"], train_data["label"]
         label = label.to("cpu").detach().numpy()
         valid_data = dict(edge=edge[:, eids], label=label[eids])
+    
+    valid_data['label'] = valid_data['label'].to('cpu').detach().numpy() # convert for score calc
 
     logger.info(f"Training Started : n_epoch={n_epoch}")
-    best_auc, best_epoch = 0, -1
+    best_auc, best_epoch, best_prob = 0, -1, None
     for e in range(n_epoch):
         # forward
         pred = model(train_data["edge"])
@@ -74,10 +78,13 @@ def train(
                 logger.info(
                     f" * In epoch {(e+1):04}, loss={loss:.03f}, acc={acc:.03f}, AUC={auc:.03f}, Best AUC"
                 )
-                best_auc, best_epoch = auc, e
+                best_auc, best_epoch, best_prob = auc, e, prob
                 torch.save(
                     {"model": model.state_dict(), "epoch": e + 1},
                     os.path.join(weight, f"best_model.pt"),
+                )
+                pd.DataFrame({"prediction": best_prob}).to_csv(
+                    vd_savedir, index_label="id"
                 )
     torch.save(
         {"model": model.state_dict(), "epoch": e + 1},

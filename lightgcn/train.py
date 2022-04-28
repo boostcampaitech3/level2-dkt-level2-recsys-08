@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 import torch
 from config import CFG, logging_conf
 from lightgcn.datasets import prepare_dataset
@@ -46,11 +47,13 @@ def main():
     train(
         model,
         train_data,
+        valid_data,
         n_epoch=CFG.n_epoch,
         learning_rate=CFG.learning_rate,
         use_wandb=CFG.user_wandb,
         weight=CFG.weight_basepath,
         logger=logger.getChild("train"),
+        vd_savedir=os.path.join(CFG.output_dir, CFG.valid_file)
     )
     logger.info("[3/3] Model Training - Done")
 
