@@ -18,6 +18,19 @@ device = torch.device("cuda" if use_cuda else "cpu")
 print(device)
 
 
+def set_seed(seed):
+    import random
+    import numpy as np
+
+    random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+
+
 def main():
     logger.info("Task Started")
 
@@ -62,4 +75,5 @@ def main():
 
 
 if __name__ == "__main__":
+    set_seed(CFG.seed)
     main()
