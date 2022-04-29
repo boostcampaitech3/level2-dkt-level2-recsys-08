@@ -30,7 +30,7 @@ class Preprocess:
             random.seed(seed)  # fix to default seed 0
             random.shuffle(data)
 
-        size = int(len(data) * ratio)
+        size = int(len(data) * ratio)  # 전체 학생의 70%
         data_1 = data[:size]
         data_2 = data[size:]
 
@@ -41,7 +41,8 @@ class Preprocess:
         np.save(le_path, encoder.classes_)
 
     def __preprocessing(self, df, is_train=True):
-        cate_cols = ["assessmentItemID", "testId", "KnowledgeTag"]
+        # cate_cols = ["assessmentItemID", "testId", "KnowledgeTag"]
+        cate_cols = ["assessmentItemID", "testId", "KnowledgeTag", "i_head"]
 
         if not os.path.exists(self.args.asset_dir):
             os.makedirs(self.args.asset_dir)
@@ -50,9 +51,9 @@ class Preprocess:
 
             le = LabelEncoder()
             if is_train:
-                # For UNKNOWN class
-                a = df[col].unique().tolist() + ["unknown"]
-                le.fit(a)
+                # train에 안 나올 수 있는 class를 위해 unknown 클래스 추가
+                a = df[col].unique().tolist() + ["unknown"]  # ["A010001001",...,"unknown"]
+                le.fit(a)  # fit() : 실제로 label encoding 진행 (mapping)
                 self.__save_labels(le, col)
             else:
                 label_path = os.path.join(self.args.asset_dir, col + "_classes.npy")
@@ -62,9 +63,9 @@ class Preprocess:
                     lambda x: x if str(x) in le.classes_ else "unknown"
                 )
 
-            # 모든 컬럼이 범주형이라고 가정
+            
             df[col] = df[col].astype(str)
-            test = le.transform(df[col])
+            test = le.transform(df[col])  # encoded label을 return
             df[col] = test
 
         def convert_time(s):
@@ -77,9 +78,54 @@ class Preprocess:
 
         return df
 
+
     def __feature_engineering(self, df):
-        # TODO
+        # 유저별 시퀀스 고려
+        df.sort_values(by=['userID','Timestamp'], inplace=True)
+
+        # 해당 사용자가 해당 문제를 푸는데 걸린 시간
+        # diff = df.loc[:, ['userID', 'Timestamp']].groupby('userID').diff().fillna(pd.Timedelta(seconds=0))
+        # diff = diff.fillna(pd.Timedelta(seconds=0))
+        # diff = diff['Timestamp'].apply(lambda x: x.total_seconds())
+        # df['t_elapsed'] = diff
+        # df['t_elapsed'] = df['t_elapsed'].apply(lambda x : x if x < 650 else None)
+
+        # 대분류
+        df['i_head'] = df['testId'].apply(lambda x : int(x[1:4])//10)
+
+        # 중분류
+        # df['i_mid'] = df['testId'].apply(lambda x : int(x[-3:]))
+
+        # 대분류에 대한 평균점수, 푼 문항 수, 평균풀이소요시간
+        # user_feature = df.groupby(['userID','i_head']).agg({
+        #     'answerCode':['mean', 'count'],
+        #     't_elapsed':['mean']
+        # })
+        # user_feature.reset_index(inplace=True)
+        # user_feature.columns = ["userID","i_head","u_head_mean","u_head_count", "u_head_elapsed"]
+        # df = pd.merge(df, user_feature, on=['userID', 'i_head'], how="left")
+        
+
+        ### Encoding
+        # cate2idx_dict = {}
+        # offset = 1
+
+        # # i_head2idx
+        # i_head2idx = dict([(v, i+offset) for i, v in enumerate(df['i_head'].unique())])
+        # cate2idx_dict['i_head2idx'] = i_head2idx
+        # offset += len(i_head2idx)
+
+        # # i_mid2idx
+        # i_mid2idx = dict([(v, i+offset) for i, v in enumerate(df['i_mid'].unique())])
+        # cate2idx_dict['i_mid2idx'] = i_mid2idx
+        # offset += len(i_mid2idx)
+
+        # df['i_head'] = df['i_head'].map(i_head2idx)
+        # df['i_mid'] = df['i_mid'].map(i_mid2idx)
+
+
         return df
+
 
     def load_data_from_file(self, file_name, is_train=True):
         csv_file_path = os.path.join(self.args.data_dir, file_name)
@@ -87,20 +133,16 @@ class Preprocess:
         df = self.__feature_engineering(df)
         df = self.__preprocessing(df, is_train)
 
-        # 추후 feature를 embedding할 시에 embedding_layer의 input 크기를 결정할때 사용
+        # 추후 feature를 embedding할 시에 embedding_layer의 input 크기를 결정할 때 사용
+        self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir, "assessmentItemID_classes.npy")))
+        self.args.n_test = len(np.load(os.path.join(self.args.asset_dir, "testId_classes.npy")))
+        self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir, "KnowledgeTag_classes.npy")))
+        self.args.n_head = len(np.load(os.path.join(self.args.asset_dir, "i_head_classes.npy")))  ### 추가한 부분 
 
-        self.args.n_questions = len(
-            np.load(os.path.join(self.args.asset_dir, "assessmentItemID_classes.npy"))
-        )
-        self.args.n_test = len(
-            np.load(os.path.join(self.args.asset_dir, "testId_classes.npy"))
-        )
-        self.args.n_tag = len(
-            np.load(os.path.join(self.args.asset_dir, "KnowledgeTag_classes.npy"))
-        )
 
         df = df.sort_values(by=["userID", "Timestamp"], axis=0)
-        columns = ["userID", "assessmentItemID", "testId", "answerCode", "KnowledgeTag"]
+        # columns = ["userID", "assessmentItemID", "testId", "answerCode", "KnowledgeTag"]
+        columns = ["userID", "assessmentItemID", "testId", "answerCode", "KnowledgeTag", "i_head"]
         group = (
             df[columns]
             .groupby("userID")
@@ -110,6 +152,7 @@ class Preprocess:
                     r["assessmentItemID"].values,
                     r["KnowledgeTag"].values,
                     r["answerCode"].values,
+                    r["i_head"].values,
                 )
             )
         )
@@ -129,28 +172,34 @@ class DKTDataset(torch.utils.data.Dataset):
         self.args = args
 
     def __getitem__(self, index):
-        row = self.data[index]
+        row = self.data[index]  # 특정 학생에 대한 풀이 내역 데이터
 
-        # 각 data의 sequence length
+        # 각 data의 sequence length (학생의 문제 풀이 내역 개수)
         seq_len = len(row[0])
 
-        test, question, tag, correct = row[0], row[1], row[2], row[3]
+        # 특정 학생에 대한 풀이 기록 데이터
+        # 순서대로 testId, assessmentItemID, KnowledgeTag, answerCode 기록들 (ndarray)
+        # test, question, tag, correct = row[0], row[1], row[2], row[3]
+        test, question, tag, correct, i_head = row[0], row[1], row[2], row[3], row[4]
 
-        cate_cols = [test, question, tag, correct]
+        # cate_cols = [test, question, tag, correct]
+        cate_cols = [test, question, tag, correct, i_head]
 
-        # max seq len을 고려하여서 이보다 길면 자르고 아닐 경우 그대로 냅둔다
+        # max seq len을 고려해서 이보다 길면 자르고 아닐 경우 그대로 냅둔다
+        # 학생의 문제 풀이 내역이 20개 이상 되면 그 뒷부분은 자른다.
+        # mask : 유효/무효한 sequence를 전달하는 정보
         if seq_len > self.args.max_seq_len:
             for i, col in enumerate(cate_cols):
-                cate_cols[i] = col[-self.args.max_seq_len :]
-            mask = np.ones(self.args.max_seq_len, dtype=np.int16)
+                cate_cols[i] = col[-self.args.max_seq_len :]  # 최근 기록들만 살린다.
+            mask = np.ones(self.args.max_seq_len, dtype=np.int16)  # 모두 실제 기록이므로
         else:
             mask = np.zeros(self.args.max_seq_len, dtype=np.int16)
-            mask[-seq_len:] = 1
+            mask[-seq_len:] = 1  # 뒤에 seq_len 개만큼의 데이터는 실제 기록이므로
 
         # mask도 columns 목록에 포함시킴
-        cate_cols.append(mask)
+        cate_cols.append(mask)  
 
-        # np.array -> torch.tensor 형변환
+        # np.array → torch.tensor 형변환
         for i, col in enumerate(cate_cols):
             cate_cols[i] = torch.tensor(col)
 
@@ -164,12 +213,12 @@ from torch.nn.utils.rnn import pad_sequence
 
 
 def collate(batch):
-    col_n = len(batch[0])
+    col_n = len(batch[0])  # 여러 명의 학생 데이터
     col_list = [[] for _ in range(col_n)]
-    max_seq_len = len(batch[0][-1])
+    max_seq_len = len(batch[0][-1]) # 어차피 20일 듯?
 
     # batch의 값들을 각 column끼리 그룹화
-    for row in batch:
+    for row in batch:  # 각 학생에 대해 padding 처리
         for i, col in enumerate(row):
             pre_padded = torch.zeros(max_seq_len)
             pre_padded[-len(col) :] = col
