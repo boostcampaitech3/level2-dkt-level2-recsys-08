@@ -33,14 +33,12 @@ def run(args, train_data, valid_data):
         print(f"Start Training: Epoch {epoch + 1}")
 
         ### TRAIN
-        train_auc, train_acc, train_loss = train(
-            train_loader, model, optimizer, scheduler, args
-        )
+        train_auc, train_acc, train_loss = train(train_loader, model, optimizer, scheduler, args)
 
         ### VALID
         auc, acc = validate(valid_loader, model, args)
 
-        ### TODO: model save or early stopping
+        ### model save or early stopping
         wandb.log(
             {
                 "epoch": epoch,
@@ -78,7 +76,7 @@ def run(args, train_data, valid_data):
 
 
 def train(train_loader, model, optimizer, scheduler, args):
-    model.train()
+    model.train()  # train mode로 변경
 
     total_preds = []
     total_targets = []
@@ -86,15 +84,15 @@ def train(train_loader, model, optimizer, scheduler, args):
     for step, batch in enumerate(train_loader):
         input = process_batch(batch, args)
         preds = model(input)
-        targets = input[3]  # correct
+        targets = input[3]  # answerCode
 
-        loss = compute_loss(preds, targets)
+        loss = compute_loss(preds, targets)  # 마지막 sequence 값만 loss 계산
         update_params(loss, model, optimizer, scheduler, args)
 
         if step % args.log_steps == 0:
             print(f"Training steps: {step} Loss: {str(loss.item())}")
 
-        # predictions
+        # predictions (맨 마지막)
         preds = preds[:, -1]
         targets = targets[:, -1]
 
@@ -205,37 +203,39 @@ def get_model(args):
 
 # 배치 전처리
 def process_batch(batch, args):
-
-    test, question, tag, correct, mask = batch
+    
+    # test, question, tag, correct, mask = batch
+    test, question, tag, correct, i_head, mask = batch
 
     # change to float
     mask = mask.type(torch.FloatTensor)
     correct = correct.type(torch.FloatTensor)
 
-    # interaction을 임시적으로 correct를 한칸 우측으로 이동한 것으로 사용
-    interaction = correct + 1  # 패딩을 위해 correct값에 1을 더해준다.
-    interaction = interaction.roll(shifts=1, dims=1)
-    interaction_mask = mask.roll(shifts=1, dims=1)
-    interaction_mask[:, 0] = 0
-    interaction = (interaction * interaction_mask).to(torch.int64)
+    # interaction : 바로 이전 문제 맞췄는지 여부
+    interaction = correct + 1  # 0을 padding으로 인식하기 위해 correct값에 1을 더해준다.
+    interaction = interaction.roll(shifts=1, dims=1)  # roll : tensor를 밀어준다. 
+    interaction_mask = mask.roll(shifts=1, dims=1)  # [[1,0,0,...,0,1,1,1,1,...,1],...]
+    interaction_mask[:, 0] = 0  # 맨 첫번째 문제 기록에서는 '이전 문제 기록'이 없다.
+    interaction = (interaction * interaction_mask).to(torch.int64)  # 0을 padding으로 인식시키기
 
-    #  test_id, question_id, tag
+    #  test_id, question_id, tag에서 0을 padding으로 인식시키기
     test = ((test + 1) * mask).to(torch.int64)
     question = ((question + 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
+    i_head = ((i_head + 1) * mask).to(torch.int64)  ###  추가한 부분
+
 
     # device memory로 이동
-
     test = test.to(args.device)
     question = question.to(args.device)
-
     tag = tag.to(args.device)
     correct = correct.to(args.device)
+    i_head = i_head.to(args.device)  ### 추가한 부분
     mask = mask.to(args.device)
-
     interaction = interaction.to(args.device)
 
-    return (test, question, tag, correct, mask, interaction)
+    # return (test, question, tag, correct, mask, interaction)
+    return (test, question, tag, correct, i_head, mask, interaction)
 
 
 # loss계산하고 parameter update!
@@ -248,7 +248,7 @@ def compute_loss(preds, targets):
     """
     loss = get_criterion(preds, targets)
 
-    # 마지막 시퀀드에 대한 값만 loss 계산
+    # 마지막 sequence에 대한 값만 loss 계산
     loss = loss[:, -1]
     loss = torch.mean(loss)
     return loss
