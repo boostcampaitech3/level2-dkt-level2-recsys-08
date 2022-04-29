@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 import torch
 from config import CFG, logging_conf
 from lightgcn.datasets import prepare_dataset
@@ -21,7 +22,7 @@ def main():
     logger.info("Task Started")
 
     logger.info("[1/1] Data Preparing - Start")
-    train_data, test_data, n_node = prepare_dataset(
+    train_data, valid_data, test_data, n_node = prepare_dataset(
         device, CFG.basepath, verbose=CFG.loader_verbose, logger=logger.getChild("data")
     )
     logger.info("[1/1] Data Preparing - Done")
@@ -46,11 +47,14 @@ def main():
     train(
         model,
         train_data,
+        valid_data,
         n_epoch=CFG.n_epoch,
         learning_rate=CFG.learning_rate,
         use_wandb=CFG.user_wandb,
         weight=CFG.weight_basepath,
         logger=logger.getChild("train"),
+        vd_savedir=os.path.join(CFG.output_dir, CFG.valid_file),
+        time=CFG.time
     )
     logger.info("[3/3] Model Training - Done")
 

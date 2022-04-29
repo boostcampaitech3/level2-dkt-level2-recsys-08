@@ -1,25 +1,29 @@
+import datetime
+
 # ====================================================
 # CFG
 # ====================================================
 class CFG:
     use_cuda_if_available = True
     user_wandb = True
-    wandb_kwargs = dict(project="dkt-gcn")
+    wandb_kwargs = dict(project="boostcamp-dkt")
 
     # data
-    basepath = "/opt/ml/input/data/"
+    basepath = "/opt/ml/input/data/graph_v1/"
     loader_verbose = True
 
     # dump
-    output_dir = "./output/"
-    pred_file = "submission.csv"
+    output_dir = "./output"
+    time = datetime.datetime.now().strftime('%b-%d-%Y_%H-%M-%S')
+    valid_file = 'validation-'+time+'.csv'
+    pred_file = "submission-"+time+".csv"
 
     # build
     embedding_dim = 64  # int
     num_layers = 1  # int
     alpha = None  # Optional[Union[float, Tensor]]
     build_kwargs = {}  # other arguments
-    weight = "./weight/best_model.pt"
+    weight = "./weight/best_model-Apr-28-2022_06-14-20.pt"
 
     # train
     n_epoch = 20
