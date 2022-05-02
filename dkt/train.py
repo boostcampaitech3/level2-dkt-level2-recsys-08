@@ -20,21 +20,11 @@ def main(args):
 
     preprocess = Preprocess(args)
     preprocess.load_train_data(args.file_name)
-<<<<<<< HEAD
     train_data = preprocess.get_train_data() 
-=======
+        
+    train_data, valid_data = preprocess.split_data(train_data)  
 
-    # 여기서 말하는 train_data는 학생별 testId, assessmentItemID, KnowledgeTag, answerCode 값 리스트를 의미한다.
-    train_data = preprocess.get_train_data()
->>>>>>> 296752926a6e89406b4e2364fa5c62e99f6be183
-
-    # (real) train-validation split
-    train_data, valid_data = preprocess.split_data(train_data)   # 학생, 7:3
-
-    # train_data = post_process(train_data, args)
-    # valid_data = post_process(valid_data, args)
-
-    # wandb.init(project="dkt", config=vars(args))
+    wandb.init(project="dkt", config=vars(args))
     trainer.run(args, train_data, valid_data)
 
 

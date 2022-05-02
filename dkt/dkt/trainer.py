@@ -219,7 +219,7 @@ def process_batch(batch, args):
     pr_batch_dict["answerCode"] = batch_dict['answerCode'].type(torch.FloatTensor)
     
     #  interaction을 임시적으로 correct를 한칸 우측으로 이동한 것으로 사용
-    #    saint의 경우 decoder에 들어가는 input이다
+    
     interaction_mask = pr_batch_dict["mask"].roll(shifts=1,dims=1)
     interaction_mask[:,0] = 0
 

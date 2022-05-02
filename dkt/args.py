@@ -17,14 +17,8 @@ def parse_args(mode="train"):
     parser.add_argument("--asset_dir", default="asset/", type=str, help="data directory")
 
     parser.add_argument('--feature_type', default='cont', type=str, help='feature combination you choose')
-
-
-    parser.add_argument(
-        "--file_name", default="all.csv", type=str, help="train file name"
-    )
-
     ### 변경한 부분
-    parser.add_argument("--file_name", default="cv_train_data.csv", type=str, help="cv train file name")
+    parser.add_argument("--file_name", default="train_data.csv", type=str, help="cv train file name")
 
     parser.add_argument("--model_dir", default="models/", type=str, help="model directory")
     parser.add_argument("--model_name", default="model.pt", type=str, help="model file name")

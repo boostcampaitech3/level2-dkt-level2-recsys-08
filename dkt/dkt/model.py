@@ -19,11 +19,7 @@ class LSTM(nn.Module):
         self.n_layers = self.args.n_layers
 
         ### Embedding
-        # nn.Embedding(num_embeddings, embedding_dim, …)
-        # num_embeddings : 해당 카테고리에서 embedding해야 하는 가짓수
-        # embedding_dim : embedding했을 때의 vector size
-        # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
-        # test, question, tag에서 +1한 이유 : train에 정의되지 않은 클래스가 있을 경우를 대비
+
         self.embedding_interaction = nn.Embedding(3, self.hidden_dim // 3)
         self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim // 3)
         self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim // 3)
@@ -86,8 +82,6 @@ class LSTM(nn.Module):
                                 embed_question, 
                                 embed_tag, 
                                 embed_head,
-                                # embed_mid,
-                                # embed_tail,
                                 embed_hour,
                                 embed_dow,
                                 ],2)
@@ -95,7 +89,7 @@ class LSTM(nn.Module):
         embed_cate = self.cate_proj(embed_cate)
 
         # CONT
-        cont = torch.cat([input[bbb].unsqueeze(2) for bbb in self.args.cont_col], 2)
+        cont = torch.cat([input[col].unsqueeze(2) for col in self.args.cont_col], 2)
         embed_cont = self.embedding_cont(cont)
 
         X = self.comb_proj(torch.cat([embed_cate, embed_cont],2))
@@ -123,8 +117,7 @@ class LSTMATTN(nn.Module):
         self.drop_out = self.args.drop_out
 
         # Embedding
-        
-        # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
+                
         self.embedding_interaction = nn.Embedding(3, self.hidden_dim // 3)
         self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim // 3)
         self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim // 3)
@@ -223,7 +216,7 @@ class LSTMATTN(nn.Module):
         return preds
 
 
-class Bert(nn.Module):
+class Bert(nn.Module): # 아직 구현 X
     def __init__(self, args):
         super(Bert, self).__init__()
         self.args = args
@@ -488,7 +481,7 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-class Saint(nn.Module):
+class Saint(nn.Module): # 아직 구현 X 
     
     def __init__(self, args):
         super(Saint, self).__init__()
@@ -505,12 +498,9 @@ class Saint(nn.Module):
         self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim // 3)
         self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim // 3)
         self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim // 3)
-        self.embedding_head = nn.Embedding(self.args.n_head + 1, self.hidden_dim // 3)
-        # self.embedding_mid = nn.Embedding(self.args.n_mid + 1, self.hidden_dim // 3)
-        # self.embedding_tail = nn.Embedding(self.args.n_tail + 1, self.hidden_dim // 3)
+        self.embedding_head = nn.Embedding(self.args.n_head + 1, self.hidden_dim // 3)        
         self.embedding_hour = nn.Embedding(self.args.n_hour + 1, self.hidden_dim // 3)
         self.embedding_dow = nn.Embedding(self.args.n_dow + 1, self.hidden_dim // 3)
-
         
         self.bn_cont_e = nn.BatchNorm1d(max(self.args.n_cont_e,1))
 
