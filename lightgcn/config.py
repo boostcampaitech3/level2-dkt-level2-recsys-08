@@ -4,6 +4,8 @@ import datetime
 # CFG
 # ====================================================
 class CFG:
+    seed = 42
+
     use_cuda_if_available = True
     user_wandb = True
     wandb_kwargs = dict(project="boostcamp-dkt")

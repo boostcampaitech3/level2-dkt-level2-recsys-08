@@ -71,9 +71,9 @@ class Preprocess:
 
             le = LabelEncoder()
             if is_train:
-                # For UNKNOWN class
-                a = df[col].unique().tolist() + ["unknown"]
-                le.fit(a)
+                # train에 안 나올 수 있는 class를 위해 unknown 클래스 추가
+                a = df[col].unique().tolist() + ["unknown"]  # ["A010001001",...,"unknown"]
+                le.fit(a)  # fit() : 실제로 label encoding 진행 (mapping)
                 self.__save_labels(le, col)
             else:
                 label_path = os.path.join(self.args.asset_dir, col + "_classes.npy")
@@ -84,7 +84,7 @@ class Preprocess:
             # 얘는 str이 아니면 무조건 걸러버림
             # 모든 컬럼이 범주형이라고 가정
             df[col] = df[col].astype(str)
-            test = le.transform(df[col])
+            test = le.transform(df[col])  # encoded label을 return
             df[col] = test
 
         # def convert_time(s):  
@@ -330,17 +330,12 @@ class Preprocess:
         df = self.__feature_engineering(df, is_train)
         df = self.__preprocessing(df, is_train)
 
-        # 추후 feature를 embedding할 시에 embedding_layer의 input 크기를 결정할때 사용
+        # 추후 feature를 embedding할 시에 embedding_layer의 input 크기를 결정할 때 사용
+        self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir, "assessmentItemID_classes.npy")))
+        self.args.n_test = len(np.load(os.path.join(self.args.asset_dir, "testId_classes.npy")))
+        self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir, "KnowledgeTag_classes.npy")))
+        self.args.n_head = len(np.load(os.path.join(self.args.asset_dir, "i_head_classes.npy")))  ### 추가한 부분 
 
-        self.args.n_questions = len(
-            np.load(os.path.join(self.args.asset_dir, "assessmentItemID_classes.npy"))
-        )
-        self.args.n_test = len(
-            np.load(os.path.join(self.args.asset_dir, "testId_classes.npy"))
-        )
-        self.args.n_tag = len(
-            np.load(os.path.join(self.args.asset_dir, "KnowledgeTag_classes.npy"))
-        )
 
         self.args.n_head= len(
             np.load(os.path.join(self.args.asset_dir, "i_head_classes.npy"))
@@ -394,9 +389,9 @@ class DKTDataset(torch.utils.data.Dataset):
         self.args = args
 
     def __getitem__(self, index):
-        row = self.data[index]
+        row = self.data[index]  # 특정 학생에 대한 풀이 내역 데이터
 
-        # 각 data의 sequence length
+        # 각 data의 sequence length (학생의 문제 풀이 내역 개수)
         seq_len = len(row[0])
         # TODO 6 : 정해지지 않은 변수로 받을 수 있게 하기 
         
@@ -409,12 +404,12 @@ class DKTDataset(torch.utils.data.Dataset):
             mask = np.ones(self.args.max_seq_len, dtype=np.int16)
         else:
             mask = np.zeros(self.args.max_seq_len, dtype=np.int16)
-            mask[-seq_len:] = 1
+            mask[-seq_len:] = 1  # 뒤에 seq_len 개만큼의 데이터는 실제 기록이므로
 
         # mask도 columns 목록에 포함시킴
-        cate_cols.append(mask)
+        cate_cols.append(mask)  
 
-        # np.array -> torch.tensor 형변환
+        # np.array → torch.tensor 형변환
         for i, col in enumerate(cate_cols):
             cate_cols[i] = torch.tensor(col)
 
@@ -427,12 +422,12 @@ from torch.nn.utils.rnn import pad_sequence
 
 
 def collate(batch):
-    col_n = len(batch[0])
+    col_n = len(batch[0])  # 여러 명의 학생 데이터
     col_list = [[] for _ in range(col_n)]
     max_seq_len = len(batch[0][-1])
     
     # batch의 값들을 각 column끼리 그룹화
-    for row in batch:
+    for row in batch:  # 각 학생에 대해 padding 처리
         for i, col in enumerate(row):
             pre_padded = torch.zeros(max_seq_len)            
             pre_padded[-len(col):] = col

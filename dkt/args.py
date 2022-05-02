@@ -14,9 +14,7 @@ def parse_args(mode="train"):
         type=str,
         help="data directory",
     )
-    parser.add_argument(
-        "--asset_dir", default="asset/", type=str, help="data directory"
-    )
+    parser.add_argument("--asset_dir", default="asset/", type=str, help="data directory")
 
     parser.add_argument('--feature_type', default='cont', type=str, help='feature combination you choose')
 
@@ -25,30 +23,21 @@ def parse_args(mode="train"):
         "--file_name", default="all.csv", type=str, help="train file name"
     )
 
-    parser.add_argument(
-        "--model_dir", default="models/", type=str, help="model directory"
-    )
-    parser.add_argument(
-        "--model_name", default="model.pt", type=str, help="model file name"
-    )
+    ### 변경한 부분
+    parser.add_argument("--file_name", default="cv_train_data.csv", type=str, help="cv train file name")
 
-    parser.add_argument(
-        "--output_dir", default="output/", type=str, help="output directory"
-    )
-    parser.add_argument(
-        "--test_file_name", default="test_data.csv", type=str, help="test file name"
-    )
+    parser.add_argument("--model_dir", default="models/", type=str, help="model directory")
+    parser.add_argument("--model_name", default="model.pt", type=str, help="model file name")
 
-    parser.add_argument(
-        "--max_seq_len", default=100, type=int, help="max sequence length"
-    )
+    parser.add_argument("--max_seq_len", default=100, type=int, help="max sequence length")
     parser.add_argument("--num_workers", default=1, type=int, help="number of workers")
 
     # 모델
-    parser.add_argument(
-        "--hidden_dim", default=128, type=int, help="hidden dimension size"
-    )
+    parser.add_argument("--hidden_dim", default=128, type=int, help="hidden dimension size")
     parser.add_argument("--n_layers", default=1, type=int, help="number of layers")
+    parser.add_argument("--output_dir", default="output/", type=str, help="output directory")
+    parser.add_argument("--test_file_name", default="test_data.csv", type=str, help="test file name")
+    
     parser.add_argument("--n_heads", default=2, type=int, help="number of heads")
     parser.add_argument("--drop_out", default=0.5, type=float, help="drop out rate")
 
@@ -60,16 +49,12 @@ def parse_args(mode="train"):
     parser.add_argument("--clip_grad", default=10, type=int, help="clip grad")
     parser.add_argument("--patience", default=5, type=int, help="for early stopping")
 
-    parser.add_argument(
-        "--log_steps", default=50, type=int, help="print log per n steps"
-    )
+    parser.add_argument("--log_steps", default=50, type=int, help="print log per n steps")
 
     ### 중요 ###
-    parser.add_argument("--model", default="lastquery", type=str, help="model type")
+    parser.add_argument("--model", default="lstm", type=str, help="model type")
     parser.add_argument("--optimizer", default="adam", type=str, help="optimizer type")
-    parser.add_argument(
-        "--scheduler", default="plateau", type=str, help="scheduler type"
-    )
+    parser.add_argument("--scheduler", default="plateau", type=str, help="scheduler type")
 
 
     

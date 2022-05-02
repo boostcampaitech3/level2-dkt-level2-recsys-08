@@ -33,14 +33,12 @@ def run(args, train_data, valid_data):
         print(f"Start Training: Epoch {epoch + 1}")
 
         ### TRAIN
-        train_auc, train_acc, train_loss = train(
-            train_loader, model, optimizer, scheduler, args
-        )
+        train_auc, train_acc, train_loss = train(train_loader, model, optimizer, scheduler, args)
 
         ### VALID
         auc, acc = validate(valid_loader, model, args)
 
-        ### TODO: model save or early stopping
+        ### model save or early stopping
         wandb.log(
             {
                 "epoch": epoch,
@@ -78,7 +76,7 @@ def run(args, train_data, valid_data):
 
 
 def train(train_loader, model, optimizer, scheduler, args):
-    model.train()
+    model.train()  # train mode로 변경
 
     total_preds = []
     total_targets = []
@@ -95,7 +93,7 @@ def train(train_loader, model, optimizer, scheduler, args):
         if step % args.log_steps == 0:
             print(f"Training steps: {step} Loss: {str(loss.item())}")
 
-        # predictions
+        # predictions (맨 마지막)
         preds = preds[:, -1]
         targets = targets[:, -1]
 
@@ -256,7 +254,7 @@ def compute_loss(preds, targets):
     """
     loss = get_criterion(preds, targets)
 
-    # 마지막 시퀀드에 대한 값만 loss 계산
+    # 마지막 sequence에 대한 값만 loss 계산
     loss = loss[:, -1]
     loss = torch.mean(loss)
     return loss
