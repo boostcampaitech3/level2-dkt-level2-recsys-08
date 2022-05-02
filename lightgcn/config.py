@@ -9,7 +9,7 @@ class CFG:
     wandb_kwargs = dict(project="boostcamp-dkt")
 
     # data
-    basepath = "/opt/ml/input/data/graph_v1/"
+    basepath = "/opt/ml/input/data/"
     loader_verbose = True
 
     # dump
@@ -20,15 +20,15 @@ class CFG:
 
     # build
     embedding_dim = 64  # int
-    num_layers = 1  # int
+    num_layers = 2  # int
     alpha = None  # Optional[Union[float, Tensor]]
     build_kwargs = {}  # other arguments
-    weight = "./weight/best_model-Apr-28-2022_06-14-20.pt"
+    weight = "weight/last_model.pt"
 
     # train
-    n_epoch = 20
-    learning_rate = 0.001
-    weight_basepath = "./weight"
+    n_epoch = 100
+    learning_rate = 0.007
+    weight_basepath = "weight"
 
 
 logging_conf = {  # only used when 'user_wandb==False'

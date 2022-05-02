@@ -18,8 +18,11 @@ def parse_args(mode="train"):
         "--asset_dir", default="asset/", type=str, help="data directory"
     )
 
+    parser.add_argument('--feature_type', default='cont', type=str, help='feature combination you choose')
+
+
     parser.add_argument(
-        "--file_name", default="train_data.csv", type=str, help="train file name"
+        "--file_name", default="all.csv", type=str, help="train file name"
     )
 
     parser.add_argument(
@@ -37,17 +40,18 @@ def parse_args(mode="train"):
     )
 
     parser.add_argument(
-        "--max_seq_len", default=20, type=int, help="max sequence length"
+        "--max_seq_len", default=100, type=int, help="max sequence length"
     )
     parser.add_argument("--num_workers", default=1, type=int, help="number of workers")
 
     # 모델
     parser.add_argument(
-        "--hidden_dim", default=64, type=int, help="hidden dimension size"
+        "--hidden_dim", default=128, type=int, help="hidden dimension size"
     )
-    parser.add_argument("--n_layers", default=2, type=int, help="number of layers")
+    parser.add_argument("--n_layers", default=1, type=int, help="number of layers")
     parser.add_argument("--n_heads", default=2, type=int, help="number of heads")
-    parser.add_argument("--drop_out", default=0.2, type=float, help="drop out rate")
+    parser.add_argument("--drop_out", default=0.5, type=float, help="drop out rate")
+
 
     # 훈련
     parser.add_argument("--n_epochs", default=20, type=int, help="number of epochs")
@@ -61,11 +65,14 @@ def parse_args(mode="train"):
     )
 
     ### 중요 ###
-    parser.add_argument("--model", default="lstm", type=str, help="model type")
+    parser.add_argument("--model", default="lastquery", type=str, help="model type")
     parser.add_argument("--optimizer", default="adam", type=str, help="optimizer type")
     parser.add_argument(
         "--scheduler", default="plateau", type=str, help="scheduler type"
     )
+
+
+    
 
     args = parser.parse_args()
 

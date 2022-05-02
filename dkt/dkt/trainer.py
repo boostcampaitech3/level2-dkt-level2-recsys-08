@@ -8,7 +8,7 @@ import wandb
 from .criterion import get_criterion
 from .dataloader import get_loaders
 from .metric import get_metric
-from .model import LSTM, LSTMATTN, Bert
+from .model import LSTM, LSTMATTN, Bert, Saint, LastQuery
 from .optimizer import get_optimizer
 from .scheduler import get_scheduler
 
@@ -86,9 +86,10 @@ def train(train_loader, model, optimizer, scheduler, args):
     for step, batch in enumerate(train_loader):
         input = process_batch(batch, args)
         preds = model(input)
-        targets = input[3]  # correct
+        targets = input['answerCode']
 
         loss = compute_loss(preds, targets)
+        
         update_params(loss, model, optimizer, scheduler, args)
 
         if step % args.log_steps == 0:
@@ -128,7 +129,7 @@ def validate(valid_loader, model, args):
         input = process_batch(batch, args)
 
         preds = model(input)
-        targets = input[3]  # correct
+        targets = input['answerCode']
 
         # predictions
         preds = preds[:, -1]
@@ -191,13 +192,17 @@ def get_model(args):
     """
     Load model and move tensors to a given devices.
     """
+    args.model = args.model.lower()
     if args.model == "lstm":
         model = LSTM(args)
     if args.model == "lstmattn":
         model = LSTMATTN(args)
     if args.model == "bert":
         model = Bert(args)
-
+    if args.model == "saint":
+        model = Saint(args)
+    if args.model == "lastquery":
+            model = LastQuery(args)
     model.to(args.device)
 
     return model
@@ -205,37 +210,40 @@ def get_model(args):
 
 # 배치 전처리
 def process_batch(batch, args):
-
-    test, question, tag, correct, mask = batch
-
+    # 앞에서 이렇게 받음 -> columns = self.args.cate_col + self.args.cont_col + ['userID','answerCode']
+    # test, question, tag, correct, mask = batch
+    columns = args.cate_col + args.cont_col + ['answerCode', "mask"]
+    batch_dict = dict(zip(columns,batch))
+    pr_batch_dict = dict(zip(columns,[0 for _ in columns]))
     # change to float
-    mask = mask.type(torch.FloatTensor)
-    correct = correct.type(torch.FloatTensor)
 
-    # interaction을 임시적으로 correct를 한칸 우측으로 이동한 것으로 사용
-    interaction = correct + 1  # 패딩을 위해 correct값에 1을 더해준다.
-    interaction = interaction.roll(shifts=1, dims=1)
-    interaction_mask = mask.roll(shifts=1, dims=1)
-    interaction_mask[:, 0] = 0
-    interaction = (interaction * interaction_mask).to(torch.int64)
+    pr_batch_dict["mask"] = batch_dict['mask'].type(torch.FloatTensor)
+    pr_batch_dict["answerCode"] = batch_dict['answerCode'].type(torch.FloatTensor)
+    
+    #  interaction을 임시적으로 correct를 한칸 우측으로 이동한 것으로 사용
+    #    saint의 경우 decoder에 들어가는 input이다
+    interaction_mask = pr_batch_dict["mask"].roll(shifts=1,dims=1)
+    interaction_mask[:,0] = 0
 
-    #  test_id, question_id, tag
-    test = ((test + 1) * mask).to(torch.int64)
-    question = ((question + 1) * mask).to(torch.int64)
-    tag = ((tag + 1) * mask).to(torch.int64)
+    
+    pr_batch_dict["interaction"] = pr_batch_dict["answerCode"] + 1 # 패딩을 위해 correct값에 1을 더해준다.
+    pr_batch_dict["interaction"] = pr_batch_dict["interaction"].roll(shifts=1, dims=1)
+    pr_batch_dict["interaction"] = (pr_batch_dict["interaction"] * interaction_mask).to(torch.int64)
+    
 
+    for c in args.cate_col :
+        pr_batch_dict[c] = ((batch_dict[c] + 1) * pr_batch_dict["mask"]).to(torch.int64)
+    for c in args.cont_col :
+        # pr_batch_dict[c] = batch_dict[c].roll(shifts=1, dims=1)
+        pr_batch_dict[c] = (pr_batch_dict[c] * interaction_mask).to(torch.float32)
+        
+        
+
+    # continuous
+    for c in list(pr_batch_dict.keys()) :
+        pr_batch_dict[c] = pr_batch_dict[c].to(args.device)
     # device memory로 이동
-
-    test = test.to(args.device)
-    question = question.to(args.device)
-
-    tag = tag.to(args.device)
-    correct = correct.to(args.device)
-    mask = mask.to(args.device)
-
-    interaction = interaction.to(args.device)
-
-    return (test, question, tag, correct, mask, interaction)
+    return pr_batch_dict
 
 
 # loss계산하고 parameter update!

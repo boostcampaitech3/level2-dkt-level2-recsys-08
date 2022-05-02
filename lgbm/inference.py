@@ -5,6 +5,7 @@ from config import CFG, logging_conf
 from lgbm.datasets import load_dataframe, feature_engineering
 from lgbm.utils import get_logger
 import lightgbm as lgb
+import pandas as pd
 
 
 logger = get_logger(logging_conf)
@@ -20,8 +21,13 @@ def main():
 
     logger.info("Data Preparing - Start")
 
-    test_data = load_dataframe(CFG.basepath, "test_data.csv")
-    test_data = feature_engineering(test_data)
+    # test_data = load_dataframe(CFG.basepath, "test_data.csv")
+    # test_data = feature_engineering(test_data)
+    
+    test_data = pd.read_pickle('/opt/ml/level2-dkt-level2-recsys-08/data_pkl/test_data.pkl')
+
+        # 기본으로 쓰는것
+    
     # test 데이터셋은 각 유저의 마지막 interaction만 추출
     test_data = test_data[test_data['userID'] != test_data['userID'].shift(-1)]
     test_data = test_data.drop(['answerCode'], axis=1)
@@ -36,20 +42,43 @@ def main():
     # 참고 : https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/advanced_example.py#L82-L84
     model = lgb.Booster(model_file="model.txt")
     
-    # 사용할 Feature 설정
-    FEATS = ['KnowledgeTag', 'user_correct_answer', 'user_total_answer', 
-            'user_acc', 'i_mid_sum', 'tag_mean','tag_sum']
-
-    # 원하는 피쳐 취사 선택(Dataset.py 파일도 변경해야함)
-    FEATS += [ 
-            'u_head_mean',
-            'i_mid_mean'                                                                                                  
-            't_elapsed',            
-            'u_head_elapsed',
-            'i_mid_elapsed',           
-            ]
-
-
+    cat_cols = ['i_head', 'i_mid','i_tail', 'hour', 'dow']
+    cont_cols = [
+                'user_correct_answer',
+                'user_total_answer',
+                'user_acc',
+                't_elapsed',
+                'cum_correct',                
+                'head_term',            
+                'elo_prob',
+                'pkt',
+                'u_head_mean',
+                'u_head_count',
+                # 'u_head_std',
+                'u_head_elapsed',
+                'i_mid_elapsed',
+                'i_mid_mean',
+                # 'i_mid_std',
+                'i_mid_sum',
+                'i_mid_count',
+                'i_mid_tag_count',
+                # 'assessment_mean',
+                # 'assessment_sum',
+                # 'assessment_std',
+                'tag_mean',
+                'tag_sum',
+                # 'tag_std',
+                'tail_mean',
+                'tail_sum',
+                # 'tail_std',
+                'hour_mean',
+                'hour_sum',
+                # 'hour_std',
+                'dow_mean',
+                'dow_sum',
+                # 'dow_std'
+                ]     
+    FEATS = cat_cols + cont_cols    
 
     total_preds = model.predict(test_data[FEATS])
     logger.info("Inference - Done")

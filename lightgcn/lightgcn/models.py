@@ -61,7 +61,7 @@ def train(
         loss.backward()
         optimizer.step()
 
-        with torch.no_grad():
+        with torch.no_grad():            
             prob = model.predict_link(valid_data["edge"], prob=True)
             prob = prob.detach().cpu().numpy()
             acc = accuracy_score(valid_data["label"], prob > 0.5)
@@ -76,6 +76,7 @@ def train(
                 import wandb
 
                 wandb.log(dict(loss=loss, acc=acc, auc=auc, precision=precision, recall=recall, f1=f1))
+        print(max(prob) - min(prob))
 
         if weight:
             if auc > best_auc:
@@ -85,14 +86,14 @@ def train(
                 best_auc, best_epoch, best_prob = auc, e, prob
                 torch.save(
                     {"model": model.state_dict(), "epoch": e + 1},
-                    os.path.join(weight, f"best_model-{time}.pt"),
+                    os.path.join(weight, f"best_model.pt"),
                 )
                 pd.DataFrame({"prediction": best_prob}).to_csv(
                     vd_savedir, index_label="id"
                 )
     torch.save(
         {"model": model.state_dict(), "epoch": e + 1},
-        os.path.join(weight, f"last_model-{time}.pt"),
+        os.path.join(weight, f"last_model.pt"),
     )
     logger.info(f"Best Weight Confirmed : {best_epoch+1}'th epoch")
 

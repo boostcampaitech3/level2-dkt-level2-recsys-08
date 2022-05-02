@@ -19,15 +19,14 @@ dtype = {
 
 '''
 
-def feature_engineering(self, df, csv_data_path):
-    
+def feature_engineering(csv_data_path):    
     # 1. train/valid/test pkl 파일이 저장 될 경로
     pickle_path = '/opt/ml/level2-dkt-level2-recsys-08/data_pkl'
     
     if not os.path.isdir(os.path.join(pickle_path)):            
         os.mkdir(os.path.join(pickle_path))
         print('/opt/ml/level2-dkt-level2-recsys-08/data_pkl 위치에 폴더 생성!')    
-
+    
     def add_head_term(df):
         import math
         gdf = df[['userID','testId','i_tail','i_head','Timestamp']].sort_values(by=['userID','i_head','Timestamp'])
@@ -141,19 +140,21 @@ def feature_engineering(self, df, csv_data_path):
         df['last_problem'] = new
         return df        
     #유저별 시퀀스를 고려하기 위해 아래와 같이 정렬
+    df = pd.read_csv(csv_data_path , dtype=dtype, parse_dates=['Timestamp'])
     df.sort_values(by=['userID','Timestamp'], inplace=True)
 
+    print('피쳐 추가 시작')
     # 2. 피쳐 추가
     df['user_correct_answer'] = df.groupby('userID')['answerCode'].transform(lambda x: x.cumsum().shift(1))
     df['user_total_answer'] = df.groupby('userID')['answerCode'].cumcount()
     df['user_acc'] = df['user_correct_answer']/df['user_total_answer']
+    
 
     df['hour'] = df['Timestamp'].dt.hour
     df['dow'] = df['Timestamp'].dt.dayofweek
     
     diff = df.loc[:, ['userID', 'Timestamp']].groupby('userID').diff().fillna(pd.Timedelta(seconds=0))
 
-    
     diff = diff.fillna(pd.Timedelta(seconds=0))            
     diff = diff['Timestamp'].apply(lambda x: x.total_seconds())
 
@@ -174,7 +175,7 @@ def feature_engineering(self, df, csv_data_path):
 
     # head 피쳐    
     user_feature = df.groupby(['userID','i_head']).agg({
-    'answerCode':[
+        'answerCode':[
                 'mean',
                 'count',
                 'std'],
@@ -186,15 +187,7 @@ def feature_engineering(self, df, csv_data_path):
     # testId 피쳐
     len_seq = lambda x : len(set(x))
 
-    testId_feature = df.groupby(['testId']).agg({
-        't_elapsed': 'mean',
-        'answerCode':[
-                    'mean',
-                    'std',
-                    'sum'],
-        'i_tail':'max',
-        'KnowledgeTag':len_seq
-    })
+    testId_feature = df.groupby(['testId']).agg({'t_elapsed': 'mean','answerCode':['mean','std','sum'], 'i_tail':'max', 'KnowledgeTag' : len_seq})
     
     testId_feature.reset_index(inplace=True)
     testId_feature['i_head']=testId_feature['testId'].apply(lambda x : int(x[1:4])//10)
@@ -228,23 +221,62 @@ def feature_engineering(self, df, csv_data_path):
     df = pd.merge(df, hour_feature, on=['hour'], how="left")
     df = pd.merge(df, dow_feature, on=['dow'], how="left")
 
+    O = df[df['answerCode']==1]
+    X = df[df['answerCode']==0]
+    
+    elp_k = df.groupby(['KnowledgeTag'])['t_elapsed'].agg('mean').reset_index()
+    elp_k.columns = ['KnowledgeTag',"tag_elapsed"]
+    elp_k_o = O.groupby(['KnowledgeTag'])['t_elapsed'].agg('mean').reset_index()
+    elp_k_o.columns = ['KnowledgeTag', "tag_elapsed_o"]
+    elp_k_x = X.groupby(['KnowledgeTag'])['t_elapsed'].agg('mean').reset_index()
+    elp_k_x.columns = ['KnowledgeTag', "tag_elapsed_x"]
+    
+    df = pd.merge(df, elp_k, on=['KnowledgeTag'], how="left")
+    df = pd.merge(df, elp_k_o, on=['KnowledgeTag'], how="left")
+    df = pd.merge(df, elp_k_x, on=['KnowledgeTag'], how="left")
+
+    ass_k = df.groupby(['assessmentItemID'])['t_elapsed'].agg('mean').reset_index()
+    ass_k.columns = ['assessmentItemID',"assessment_elapsed"]
+    ass_k_o = O.groupby(['assessmentItemID'])['t_elapsed'].agg('mean').reset_index()
+    ass_k_o.columns = ['assessmentItemID',"assessment_elapsed_o"]
+    ass_k_x = X.groupby(['assessmentItemID'])['t_elapsed'].agg('mean').reset_index()
+    ass_k_x.columns = ['assessmentItemID',"assessment_elapsed_x"]
+
+    df = pd.merge(df, ass_k, on=['assessmentItemID'], how="left")
+    df = pd.merge(df, ass_k_o, on=['assessmentItemID'], how="left")
+    df = pd.merge(df, ass_k_x, on=['assessmentItemID'], how="left")
+
+    prb_k = df.groupby(['i_tail'])['t_elapsed'].agg('mean').reset_index()
+    prb_k.columns = ['i_tail',"tail_elapsed"]
+    prb_k_o = O.groupby(['i_tail'])['t_elapsed'].agg('mean').reset_index()
+    prb_k_o.columns = ['i_tail',"tail_elapsed_o"]
+    prb_k_x = X.groupby(['i_tail'])['t_elapsed'].agg('mean').reset_index()
+    prb_k_x.columns = ['i_tail',"tail_elapsed_x"]
+
+    df = pd.merge(df, prb_k, on=['i_tail'], how="left")
+    df = pd.merge(df, prb_k_o, on=['i_tail'], how="left")
+    df = pd.merge(df, prb_k_x, on=['i_tail'], how="left")
+
+
     df = df.fillna(0)
 
     file_name = csv_data_path.split('/')[-1].replace('.csv','.pkl')
     
     save_path = os.path.join(pickle_path, file_name)
     
-    df.to_pickle(os.path.join(pickle_path, self.file_name[:-3]+'pkl'))
+    df.to_pickle(save_path)
     if os.path.exists(save_path):
         print(f'{save_path} 저장 완료!')
 
 if __name__ == "__main__":
-    
+    # all data
+    feature_engineering(csv_data_path='/opt/ml/input/data/all.csv')
+
     # train data
-    feature_engineering(csv_data_path='/opt/input/data/train_data.csv')
+    feature_engineering(csv_data_path='/opt/ml/input/data/train_data.csv')
     
     # valid data
-    feature_engineering(csv_data_path='/opt/input/data/cv_valid_data.csv')
+    feature_engineering(csv_data_path='/opt/ml/input/data/cv_valid_data.csv')
 
     # test data
-    feature_engineering(csv_data_path='/opt/input/data/test_data.csv')
+    feature_engineering(csv_data_path='/opt/ml/input/data/test_data.csv')
