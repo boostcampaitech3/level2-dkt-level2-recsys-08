@@ -77,7 +77,7 @@ def ELO_function (df) :
             for student_id in np.unique(answers_df.userID)
         }
 
-        print("Parameter estimation is starting...")
+        # print("Parameter estimation is starting...")
 
         for student_id, item_id, left_asymptote, answered_correctly in (
             zip(answers_df.userID.values, answers_df[granularity_feature_name].values, answers_df.left_asymptote.values, answers_df.answerCode.values)
@@ -95,7 +95,7 @@ def ELO_function (df) :
             item_parameters[item_id]["nb_answers"] += 1
             student_parameters[student_id]["nb_answers"] += 1
 
-        print(f"Theta & beta estimations on {granularity_feature_name} are completed.")
+        # print(f"Theta & beta estimations on {granularity_feature_name} are completed.")
         return student_parameters, item_parameters
     
     def gou_func (theta, beta) :
@@ -104,8 +104,8 @@ def ELO_function (df) :
     
     df['left_asymptote'] = 0
 
-    print(f"Dataset of shape {df.shape}")
-    print(f"Columns are {list(df.columns)}")
+    # print(f"Dataset of shape {df.shape}")
+    # print(f"Columns are {list(df.columns)}")
 
     student_parameters, item_parameters = estimate_parameters(df)
     
@@ -210,6 +210,8 @@ def feature_engineering(df):
     testId_feature.columns = ['testId','i_mid_elapsed','i_mid_mean','i_mid_sum' ,'i_mid_count', 'i_mid_tag_count', 'i_head', 'i_mid']
     testId_feature = testId_feature[['testId','i_mid_elapsed','i_mid_mean','i_mid_sum' ,'i_mid_count', 'i_mid_tag_count']]
 
+    df['pkt'] = df.groupby(['userID','KnowledgeTag']).cumcount()
+
     # 태그 피쳐
     knowLedgedTag_acc = df.groupby(['KnowledgeTag'])['answerCode'].agg(['mean', 'sum'])
     knowLedgedTag_acc.columns = ["tag_mean", 'tag_sum']
@@ -221,7 +223,7 @@ def feature_engineering(df):
     return df
 
 
-def custom_train_test_split(df, ratio=0.7, split=True):
+def custom_train_test_split(df, ratio=0.9, split=True):
     users = list(zip(df['userID'].value_counts().index, df['userID'].value_counts()))
     random.seed(42)
     random.shuffle(users)
@@ -247,12 +249,13 @@ def custom_train_test_split(df, ratio=0.7, split=True):
 
 def make_dataset(train, test):
     # 사용할 Feature 설정
-    FEATS = ['KnowledgeTag', 
+    FEATS = [            
+            'KnowledgeTag', 
             'user_correct_answer', 
             'user_total_answer', 
             'user_acc', 
             'i_mid_sum', 
-            'tag_mean',
+            'tag_mean',        
             'tag_sum']
 
     # 원하는 피쳐 취사 선택(Dataset inference 둘다 파일도 변경)
@@ -270,7 +273,8 @@ def make_dataset(train, test):
             'head_term',
             'elo_prob',
             'hour',
-            'dow'
+            'dow',
+            'pkt',
             ]
 
     # X, y 값 분리
