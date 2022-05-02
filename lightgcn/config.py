@@ -25,7 +25,7 @@ class CFG:
     num_layers = 2  # int
     alpha = None  # Optional[Union[float, Tensor]]
     build_kwargs = {}  # other arguments
-    weight = "weight/last_model.pt"
+    weight = "weight/last_model.pt" # best 안됨...?
 
     # train
     n_epoch = 100

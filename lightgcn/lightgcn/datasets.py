@@ -21,7 +21,7 @@ def prepare_dataset(device, basepath, verbose=True, logger=None):
 
 
 def load_data(basepath):
-    path1 = os.path.join('/opt/ml/level2-dkt-level2-recsys-08/data_pkl/all.pkl')
+    path1 = os.path.join('/opt/ml/level2-dkt-level2-recsys-08/data_pkl/train_data.pkl')
     path2 = os.path.join('/opt/ml/level2-dkt-level2-recsys-08/data_pkl/test_data.pkl')
     data1 = pd.read_pickle(path1)
     data2 = pd.read_pickle(path2)
@@ -35,7 +35,7 @@ def load_data(basepath):
 
 
 def separate_data(data, basepath):
-    path = os.path.join(basepath, 'lcn_valid_data.csv') # subset of training set
+    path = os.path.join(basepath, 'valid_data.csv') # subset of training set
     valid_data = pd.read_csv(path)
 
     train_data = data[(data.answerCode >= 0)]
